@@ -33,7 +33,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "REACT_APP_SLEEPER_USERNAME=${{ secrets.REACT_APP_SLEEPER_USERNAME }}" > .env
-          echo "REACT_APP_SLEEPER_LEAGUE_IDS=${{ secrets.REACT_APP_SLEAGUE_IDS }}" >> .env
+          echo "REACT_APP_SLEEPER_LEAGUE_IDS=${{ secrets.REACT_APP_SLEEPER_LEAGUE_IDS }}" >> .env
 
       - name: Build
         run: npm run build
