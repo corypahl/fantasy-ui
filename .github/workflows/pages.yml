@@ -32,8 +32,8 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "SLEEPER_USERNAME=${{ secrets.SLEEPER_USERNAME }}" > .env
-          echo "SLEEPER_LEAGUE_IDS=${{ secrets.SLEEPER_LEAGUE_IDS }}" >> .env
+          echo "REACT_APP_SLEEPER_USERNAME=${{ secrets.REACT_APP_SLEEPER_USERNAME }}" > .env
+          echo "REACT_APP_SLEEPER_LEAGUE_IDS=${{ secrets.REACT_APP_SLEAGUE_IDS }}" >> .env
 
       - name: Build
         run: npm run build
