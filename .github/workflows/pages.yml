@@ -34,6 +34,10 @@ jobs:
         run: |
           echo "REACT_APP_SLEEPER_USERNAME=${{ secrets.REACT_APP_SLEEPER_USERNAME }}" > .env
           echo "REACT_APP_SLEEPER_LEAGUE_IDS=${{ secrets.REACT_APP_SLEEPER_LEAGUE_IDS }}" >> .env
+          echo "REACT_APP_ESPN_LEAGUE_IDS=${{ secrets.REACT_APP_ESPN_LEAGUE_IDS }}" >> .env
+          echo "REACT_APP_ESPN_TEAM_IDS=${{ secrets.REACT_APP_ESPN_TEAM_IDS }}" >> .env
+          echo "REACT_APP_ESPN_SWID=${{ secrets.REACT_APP_ESPN_SWID }}" >> .env
+          echo "REACT_APP_ESPN_ESPNS2=${{ secrets.REACT_APP_ESPN_ESPNS2 }}" >> .env
 
       - name: Build
         run: npm run build

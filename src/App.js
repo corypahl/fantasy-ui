@@ -133,11 +133,11 @@ function App() {
     setIsLoading(true);
     try {
       if (selectedTeam.platform === 'sleeper') {
-        const lineup = await fantasyDataService.getCurrentLineups(userData.user_id, selectedTeam.leagueId);
+        const lineup = await fantasyDataService.getCurrentLineups(userData.user_id, selectedTeam.leagueId, 'sleeper');
         setLineupData(lineup);
       } else if (selectedTeam.platform === 'espn') {
-        // TODO: Implement ESPN lineup loading
-        console.log('ESPN lineup loading not yet implemented');
+        const lineup = await fantasyDataService.getCurrentLineups(selectedTeam.teamId, selectedTeam.leagueId, 'espn');
+        setLineupData(lineup);
       }
     } catch (error) {
       console.error('Error loading lineup:', error);
@@ -154,11 +154,11 @@ function App() {
     setIsLoading(true);
     try {
       if (selectedTeam.platform === 'sleeper') {
-        const matchups = await fantasyDataService.getCurrentMatchups(selectedTeam.leagueId);
+        const matchups = await fantasyDataService.getCurrentMatchups(selectedTeam.leagueId, null, 'sleeper');
         setMatchupData(matchups);
       } else if (selectedTeam.platform === 'espn') {
-        // TODO: Implement ESPN matchup loading
-        console.log('ESPN matchup loading not yet implemented');
+        const matchups = await fantasyDataService.getCurrentMatchups(selectedTeam.leagueId, null, 'espn');
+        setMatchupData(matchups);
       }
     } catch (error) {
       console.error('Error loading matchups:', error);
@@ -175,11 +175,11 @@ function App() {
     setIsLoading(true);
     try {
       if (selectedTeam.platform === 'sleeper') {
-        const agents = await fantasyDataService.getFreeAgents(selectedTeam.leagueId);
+        const agents = await fantasyDataService.getFreeAgents(selectedTeam.leagueId, null, null, 'sleeper');
         setFreeAgents(agents);
       } else if (selectedTeam.platform === 'espn') {
-        // TODO: Implement ESPN free agents loading
-        console.log('ESPN free agents loading not yet implemented');
+        const agents = await fantasyDataService.getFreeAgents(selectedTeam.leagueId, null, null, 'espn');
+        setFreeAgents(agents);
       }
     } catch (error) {
       console.error('Error loading free agents:', error);
@@ -200,6 +200,8 @@ function App() {
               {appConfig.isDevelopment && (
                 <div className="dev-info">
                   <small>Version {appConfig.appVersion} | Environment: Development</small>
+                  <br />
+                  <small>⚠️ ESPN API calls are using mock data in development mode due to CORS restrictions</small>
                 </div>
               )}
             </div>
@@ -261,9 +263,11 @@ function App() {
                       onClick={() => handleTeamSelection(team)}
                     >
                       <div className="team-header">
-                        <span className="platform-icon">
-                          {team.platform === 'sleeper' ? '🏈' : '📺'}
-                        </span>
+                        <img 
+                          src={team.platform === 'sleeper' ? '/sleeper.png' : '/espn.jpg'} 
+                          alt={team.platform === 'sleeper' ? 'Sleeper' : 'ESPN'}
+                          className="platform-icon"
+                        />
                         <h4>{team.teamName}</h4>
                       </div>
                       <div className="team-details">
@@ -331,9 +335,15 @@ function App() {
                         </span>
                       </div>
                       <div className="status-item">
-                        <span className="status-label">API Calls:</span>
+                        <span className="status-label">Sleeper API:</span>
                         <span className="status-value">
-                          {cacheStatus.rateLimit.currentCount}/{cacheStatus.rateLimit.maxCount}
+                          {cacheStatus.rateLimit.sleeper.currentCount}/{cacheStatus.rateLimit.sleeper.maxCount}
+                        </span>
+                      </div>
+                      <div className="status-item">
+                        <span className="status-label">ESPN API:</span>
+                        <span className="status-value">
+                          {cacheStatus.rateLimit.espn.rateLimit.currentCount}/{cacheStatus.rateLimit.espn.rateLimit.maxCount}
                         </span>
                       </div>
                     </div>
