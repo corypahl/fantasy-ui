@@ -1,0 +1,35 @@
+name: Build & Deploy to GitHub Pages
+
+# Give the GITHUB_TOKEN permission to push commits and update Pages
+permissions:
+  contents: write        # allow pushing to gh-pages
+  pages: write           # allow updating the Pages site
+
+on:
+  push:
+    branches:
+      - main
+      - build
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          # this is the key piece—supply the token
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./dist
+          destination_dir: ${{ github.ref_name == 'build' && 'build' || '' }}
+          commit_message: "📦 deploy ${{ github.ref_name }} → gh-pages/${{ github.ref_name == 'build' && 'build' || '' }}"
