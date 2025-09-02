@@ -1,35 +1,58 @@
-name: Build & Deploy to GitHub Pages
-
-# Give the GITHUB_TOKEN permission to push commits and update Pages
-permissions:
-  contents: write        # allow pushing to gh-pages
-  pages: write           # allow updating the Pages site
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-      - build
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
-      - run: npm ci
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Create .env file
+        run: |
+          echo "SLEEPER_USERNAME=${{ secrets.SLEEPER_USERNAME }}" > .env
+          echo "SLEEPER_LEAGUE_IDS=${{ secrets.SLEEPER_LEAGUE_IDS }}" >> .env
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          # this is the key piece—supply the token
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./dist
-          destination_dir: ${{ github.ref_name == 'build' && 'build' || '' }}
-          commit_message: "📦 deploy ${{ github.ref_name }} → gh-pages/${{ github.ref_name == 'build' && 'build' || '' }}"
+          path: './build'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
