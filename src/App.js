@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import sleeperApi from './services/sleeperApi';
 import fantasyDataService from './services/fantasyDataService';
@@ -38,6 +38,10 @@ function App() {
     console.log('🔍 Debug: process.env.SLEEPER_USERNAME =', process.env.SLEEPER_USERNAME);
     console.log('🔍 Debug: process.env.SLEEPER_LEAGUE_IDS =', process.env.SLEEPER_LEAGUE_IDS);
     console.log('🔍 Debug: process.env.NODE_ENV =', process.env.NODE_ENV);
+    
+    // Expose services to window for debugging and cache management
+    window.fantasyDataService = fantasyDataService;
+    window.sleeperApi = sleeperApi;
     
     // Check if we have pre-configured platforms
     if (teamsConfig.hasAnyPlatform) {
@@ -123,22 +127,23 @@ function App() {
   };
 
   // Handle team selection
-  const handleTeamSelection = (team) => {
+  const handleTeamSelection = useCallback((team) => {
     setSelectedTeam(team);
     setStorageValue(STORAGE_KEYS.SELECTED_LEAGUE_ID, team.leagueId);
     setLineupData(null);
     setMatchupData(null);
     setFreeAgents([]);
-  };
+  }, []);
 
   // Load lineup data for selected team
-  const loadLineupData = async () => {
+  const loadLineupData = useCallback(async () => {
     if (!selectedTeam || !userData) return;
 
     setIsLoading(true);
     try {
       if (selectedTeam.platform === 'sleeper') {
-        const lineup = await fantasyDataService.getCurrentLineups(userData.user_id, selectedTeam.leagueId, 'sleeper');
+        // Use enhanced lineup data with projections and stats
+        const lineup = await fantasyDataService.getEnhancedLineups(userData.user_id, selectedTeam.leagueId, 'sleeper');
         setLineupData(lineup);
       } else if (selectedTeam.platform === 'espn') {
         const lineup = await fantasyDataService.getCurrentLineups(selectedTeam.teamId, selectedTeam.leagueId, 'espn');
@@ -150,10 +155,10 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTeam, userData]);
 
   // Load matchup data for selected team
-  const loadMatchupData = async () => {
+  const loadMatchupData = useCallback(async () => {
     if (!selectedTeam) return;
 
     setIsLoading(true);
@@ -171,10 +176,10 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTeam]);
 
   // Load free agents for selected team
-  const loadFreeAgents = async () => {
+  const loadFreeAgents = useCallback(async () => {
     if (!selectedTeam) return;
 
     setIsLoading(true);
@@ -192,7 +197,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTeam]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -568,7 +573,35 @@ function App() {
         </div>
 
         <div className="main-content">
-          {renderTabContent()}
+          {activeTab === 'lineups' ? (
+            <Lineups 
+              selectedTeam={selectedTeam}
+              userData={userData}
+              lineupData={lineupData}
+              onLoadLineup={loadLineupData}
+              onTeamSelection={handleTeamSelection}
+              allTeams={allTeams}
+              isLoading={isLoading}
+            />
+          ) : activeTab === 'standings' ? (
+            <Standings 
+              selectedTeam={selectedTeam}
+              userData={userData}
+              onTeamSelection={handleTeamSelection}
+              allTeams={allTeams}
+              isLoading={isLoading}
+            />
+          ) : activeTab === 'watchlist' ? (
+            <Watchlist 
+              selectedTeam={selectedTeam}
+              userData={userData}
+              onTeamSelection={handleTeamSelection}
+              allTeams={allTeams}
+              isLoading={isLoading}
+            />
+          ) : (
+            renderTabContent()
+          )}
         </div>
       </main>
     </div>

@@ -29,159 +29,233 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.add-button {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.header-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1.5rem;
 }
 
-.add-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4);
-}
-
-/* Add Player Form */
-.add-player-form {
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  border: 1px solid var(--border-color);
-}
-
-.add-player-form h3 {
-  font-size: 1.3rem;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-group {
+.league-selector {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
 }
 
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
+.league-dropdown {
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
   border-radius: 6px;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
   font-size: 0.9rem;
-  transition: border-color 0.2s ease;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--accent-blue);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: center;
-}
-
-.save-button {
-  padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  min-width: 200px;
   cursor: pointer;
-  transition: all 0.2s ease;
+}
+
+.league-dropdown:focus {
+  outline: none;
+  border-color: #00d4aa;
+  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);
+}
+
+.league-dropdown option {
+  background: #3a3a3a;
+  color: #ffffff;
+}
+
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.save-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-/* Watchlist Items */
-.watchlist-items {
+.loading-indicator {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  color: #00d4aa;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 212, 170, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 212, 170, 0.3);
 }
 
-.empty-watchlist {
+/* Matchups Container */
+.matchups-container {
+  margin-top: 2rem;
+}
+
+.loading-state,
+.no-matchups {
   text-align: center;
   padding: 3rem;
   color: var(--text-secondary);
 }
 
-.empty-watchlist p {
-  margin: 0.5rem 0;
+.matchups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.watchlist-item {
+.matchup-card {
   background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
+  overflow: hidden;
   transition: all 0.2s ease;
 }
 
-.watchlist-item:hover {
+.matchup-card:hover {
   border-color: var(--accent-blue);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.player-info {
+.matchup-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.matchup-teams {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  gap: 2rem;
   margin-bottom: 1rem;
 }
 
-.player-details {
+.team-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.team-spread {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.vs-divider {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.matchup-details {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  align-items: center;
+}
+
+.game-time,
+.game-total,
+.game-status {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.game-time {
+  color: var(--text-primary);
+}
+
+.game-total {
+  color: var(--text-secondary);
+}
+
+.game-status {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Players in Game */
+.players-in-game {
+  padding: 1.5rem;
+}
+
+.players-section {
+  margin-bottom: 1.5rem;
+}
+
+.players-section:last-child {
+  margin-bottom: 0;
+}
+
+.players-section h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.no-players {
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+}
+
+.player-item {
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.player-item:hover {
+  border-color: var(--accent-blue);
+  transform: translateX(4px);
+}
+
+.player-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.player-details {
   flex: 1;
 }
 
 .player-name {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.player-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .player-position {
@@ -189,9 +263,10 @@
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
+  margin-right: 0.5rem;
 }
 
 .player-team {
@@ -202,8 +277,9 @@
 .player-status {
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .player-status.active {
@@ -221,113 +297,6 @@
   color: white;
 }
 
-.priority-badge {
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.watchlist-details {
-  margin-bottom: 1rem;
-}
-
-.reason,
-.notes {
-  margin-bottom: 0.5rem;
-  color: var(--text-secondary);
-}
-
-.reason strong,
-.notes strong {
-  color: var(--text-primary);
-}
-
-.added-date {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.watchlist-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.edit-button,
-.remove-button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-}
-
-.edit-button {
-  background: var(--accent-blue);
-  color: white;
-}
-
-.edit-button:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-}
-
-.remove-button {
-  background: var(--accent-red);
-  color: white;
-}
-
-.remove-button:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-}
-
-/* Watchlist Stats */
-.watchlist-stats {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.watchlist-stats h3 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-}
-
-.stat-label {
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.stat-value {
-  color: var(--text-primary);
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .watchlist-content {
@@ -340,27 +309,38 @@
     align-items: stretch;
   }
 
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .player-info {
+  .header-left {
     flex-direction: column;
     gap: 1rem;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
-  .player-details {
+  .league-dropdown {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .matchup-teams {
     flex-direction: column;
-    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .vs-divider {
+    transform: rotate(90deg);
+  }
+
+  .matchup-details {
+    flex-direction: column;
     gap: 0.5rem;
   }
 
-  .watchlist-actions {
+  .player-item {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .player-avatar {
+    align-self: center;
   }
 }

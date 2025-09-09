@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Standings.css';
 
-const Standings = ({ selectedTeam, userData }) => {
+const Standings = ({ 
+  selectedTeam, 
+  userData, 
+  onTeamSelection,
+  allTeams,
+  isLoading 
+}) => {
   const [standingsData] = useState([
     {
       rank: 1,
@@ -168,6 +174,14 @@ const Standings = ({ selectedTeam, userData }) => {
   const [sortBy, setSortBy] = useState('rank');
   const [sortOrder, setSortOrder] = useState('asc');
 
+  // Auto-load first team when component mounts
+  useEffect(() => {
+    if (allTeams && allTeams.length > 0 && !selectedTeam) {
+      const firstTeam = allTeams[0];
+      onTeamSelection(firstTeam);
+    }
+  }, [allTeams, selectedTeam, onTeamSelection]);
+
   if (!userData) {
     return (
       <div className="standings-content">
@@ -257,10 +271,37 @@ const Standings = ({ selectedTeam, userData }) => {
   return (
     <div className="standings-content">
       <div className="standings-header">
-        <h2>🏆 League Standings</h2>
-        <div className="standings-info">
-          <span className="league-name">{selectedTeam.leagueName}</span>
-          <span className="season-info">2024 Season</span>
+        <div className="header-left">
+          <h2>🏆 League Standings</h2>
+          {allTeams && allTeams.length > 0 && (
+            <div className="league-selector">
+              <select 
+                value={selectedTeam ? `${selectedTeam.platform}-${selectedTeam.teamId}` : ''}
+                onChange={(e) => {
+                  const [platform, teamId] = e.target.value.split('-');
+                  const team = allTeams.find(t => t.platform === platform && t.teamId === teamId);
+                  if (team && onTeamSelection) {
+                    onTeamSelection(team);
+                  }
+                }}
+                className="league-dropdown"
+              >
+                <option value="">Select a league...</option>
+                {allTeams.map(team => (
+                  <option key={`${team.platform}-${team.teamId}`} value={`${team.platform}-${team.teamId}`}>
+                    {team.leagueName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        <div className="header-actions">
+          {isLoading && (
+            <div className="loading-indicator">
+              <span>🔄 Loading standings...</span>
+            </div>
+          )}
         </div>
       </div>
 

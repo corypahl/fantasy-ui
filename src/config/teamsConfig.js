@@ -57,9 +57,12 @@ class TeamsConfig {
     // Load league IDs (try clean name first, fallback to REACT_APP_ prefix)
     const leagueIds = process.env.SLEEPER_LEAGUE_IDS || process.env.REACT_APP_SLEEPER_LEAGUE_IDS;
     if (leagueIds) {
-      config.leagues = leagueIds.split(',').map(id => ({
+      // Custom league names mapping for Sleeper
+      const sleeperLeagueNames = ['FanDuel', 'Jackson', 'GVSU'];
+      
+      config.leagues = leagueIds.split(',').map((id, index) => ({
         id: id.trim(),
-        name: `League ${id.trim()}`,
+        name: sleeperLeagueNames[index] || `League ${id.trim()}`,
         type: 'unknown'
       }));
     }
@@ -91,10 +94,13 @@ class TeamsConfig {
       const leagueIdArray = leagueIds.split(',').map(id => id.trim());
       const teamIdArray = teamIds.split(',').map(id => id.trim());
       
+      // Custom league names mapping for ESPN (same as Sleeper for consistency)
+      const espnLeagueNames = ['FanDuel', 'Jackson', 'GVSU'];
+      
       // Create simple league and team mappings
       config.leagues = leagueIdArray.map((id, index) => ({
         id,
-        name: `ESPN League ${id}`,
+        name: espnLeagueNames[index] || `ESPN League ${id}`,
         teams: teamIdArray[index] ? [{ id: teamIdArray[index], name: `Team ${teamIdArray[index]}` }] : []
       }));
       
@@ -102,7 +108,7 @@ class TeamsConfig {
         id,
         name: `Team ${id}`,
         leagueId: leagueIdArray[index] || 'unknown',
-        leagueName: `ESPN League ${leagueIdArray[index] || 'unknown'}`
+        leagueName: espnLeagueNames[index] || `ESPN League ${leagueIdArray[index] || 'unknown'}`
       }));
     }
 
@@ -233,7 +239,7 @@ class TeamsConfig {
   getAllTeams() {
     const teams = [];
 
-    // Add Sleeper teams
+    // Add Sleeper teams first (prioritized)
     if (this.isSleeperConfigured) {
       this.sleeper.leagues.forEach(league => {
         teams.push({
@@ -248,8 +254,8 @@ class TeamsConfig {
       });
     }
 
-    // Add ESPN teams
-    if (this.isEspnConfigured) {
+    // Add ESPN teams only if Sleeper is not configured (to avoid duplicates)
+    if (this.isEspnConfigured && !this.isSleeperConfigured) {
       this.espn.teams.forEach(team => {
         teams.push({
           platform: 'espn',
