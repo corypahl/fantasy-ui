@@ -825,6 +825,397 @@ class FantasyDataService {
     return enhancedPlayers;
   }
 
+  // Get NFL games for current week from Sleeper
+  async getCurrentNFLGames() {
+    try {
+      const currentSeason = await projectionsService.getCurrentNFLSeason();
+      const currentWeek = await projectionsService.getCurrentNFLWeek();
+      
+      console.log(`Fetching NFL games for Week ${currentWeek} of ${currentSeason}`);
+      console.log('Current NFL state:', { currentSeason, currentWeek });
+      
+      // Since Sleeper doesn't have a direct NFL schedule endpoint, let's use a fallback approach
+      // We'll create mock data for now based on the known Week 2 schedule
+      const mockGames = this.getMockNFLGames(currentWeek);
+      
+      console.log(`Found ${mockGames.length} NFL games for Week ${currentWeek}`);
+      
+      return mockGames;
+    } catch (error) {
+      console.error('Error fetching NFL games:', error);
+      return [];
+    }
+  }
+
+  // Get user's matchup for a specific league and week
+  async getUserMatchup(leagueId, rosterId, week) {
+    try {
+      console.log(`Fetching matchups for league ${leagueId}, week ${week}, roster ${rosterId}`);
+      const matchups = await sleeperApi.getLeagueMatchups(leagueId, week);
+      console.log(`Received ${matchups.length} matchups:`, matchups);
+      
+      // Find the matchup where the user is playing
+      const userMatchup = matchups.find(matchup => {
+        console.log(`Checking matchup: roster_id=${matchup.roster_id}, matchup_id=${matchup.matchup_id}`);
+        return matchup.roster_id === rosterId;
+      });
+      
+      console.log(`Found user matchup:`, userMatchup);
+      return { userMatchup, allMatchups: matchups };
+    } catch (error) {
+      console.error('Error getting user matchup:', error);
+      return null;
+    }
+  }
+
+  // Get all players in a specific NFL game across all leagues
+  async getPlayersInGame(game, allTeams) {
+    try {
+      const myPlayers = [];
+      const opposingPlayers = [];
+      
+      console.log(`Getting players for game: ${game.awayTeam} @ ${game.homeTeam}`);
+      console.log('All teams data:', allTeams);
+      console.log('Team structure sample:', allTeams[0]);
+      
+      // Get all players data
+      const allPlayers = await this.getPlayersWithCache();
+      
+      // Process each team/league
+      for (const team of allTeams) {
+        try {
+          // Validate team data
+          if (!team.leagueId) {
+            console.warn('Team missing leagueId:', team);
+            continue;
+          }
+          
+          console.log(`Processing team: ${team.leagueName} (${team.leagueId})`);
+          
+          // Get roster data for this league
+          const rosters = await this.getLeagueRostersWithCache(team.leagueId);
+          const users = await this.getLeagueUsersWithCache(team.leagueId);
+          
+          console.log(`Found ${rosters.length} rosters and ${users.length} users for ${team.leagueName}`);
+          console.log('Looking for user:', team.username);
+          console.log('Available roster owners:', rosters.map(r => r.owner_id));
+          console.log('Available users:', users.map(u => ({ id: u.user_id, name: u.display_name })));
+          
+          // Find the user by display name first, then get their roster
+          const user = users.find(u => u.display_name === team.username);
+          if (!user) {
+            console.log(`No user found with display name ${team.username} in ${team.leagueName}`);
+            continue;
+          }
+          
+          console.log(`Found user: ${user.display_name} (${user.user_id})`);
+          
+          // Find the user's roster
+          const userRoster = rosters.find(roster => roster.owner_id === user.user_id);
+          if (!userRoster) {
+            console.log(`No roster found for user ${user.display_name} (${user.user_id}) in ${team.leagueName}`);
+            continue;
+          }
+          
+          console.log(`Found user roster with ${userRoster.players?.length || 0} players`);
+          
+          // Get all players in this league
+          const allLeaguePlayers = userRoster.players || [];
+          
+          // Check each player to see if they're in this game
+          console.log(`Checking ${allLeaguePlayers.length} players for game ${game.awayTeam} @ ${game.homeTeam}`);
+          let playersInGame = 0;
+          
+          for (const playerId of allLeaguePlayers) {
+            const player = allPlayers[playerId];
+            if (!player) continue;
+            
+            // Check if player is on one of the teams in this game
+            if (player.team === game.awayTeam || player.team === game.homeTeam) {
+              const isStarter = userRoster.starters?.includes(playerId) || false;
+              
+              // Only include starters
+              if (isStarter) {
+                playersInGame++;
+                console.log(`Found starter in game: ${player.first_name} ${player.last_name} (${player.team})`);
+                
+                const playerData = {
+                  ...player,
+                  leagueName: team.leagueName,
+                  leagueId: team.leagueId,
+                  isStarter: true
+                };
+                
+                myPlayers.push(playerData);
+              }
+            }
+          }
+          
+          console.log(`Found ${playersInGame} players from ${team.leagueName} in game ${game.awayTeam} @ ${game.homeTeam}`);
+          
+          // Get opposing players (only starters from teams you're playing against this week)
+          const currentWeek = await projectionsService.getCurrentNFLWeek();
+          
+          // First, find the user's roster ID (not owner ID)
+          const userRosterForMatchup = rosters.find(roster => roster.owner_id === user.user_id);
+          const userRosterId = userRosterForMatchup ? userRosterForMatchup.roster_id : null;
+          
+          console.log(`User roster ID for ${team.leagueName}: ${userRosterId} (owner: ${user.user_id})`);
+          
+          const matchupData = await this.getUserMatchup(team.leagueId, userRosterId, currentWeek);
+          
+          console.log(`Matchup data for ${team.leagueName}:`, matchupData);
+          
+          // Get opponent roster ID from matchup
+          let opponentRosterId = null;
+          if (matchupData && matchupData.userMatchup) {
+            const userMatchup = matchupData.userMatchup;
+            const allMatchups = matchupData.allMatchups;
+            
+            console.log(`Full matchup data for ${team.leagueName}:`, userMatchup);
+            
+            // Find the opponent by looking for the matchup with the same matchup_id but different roster_id
+            const opponentMatchup = allMatchups.find(matchup => 
+              matchup.matchup_id === userMatchup.matchup_id && 
+              matchup.roster_id !== userMatchup.roster_id
+            );
+            
+            if (opponentMatchup) {
+              opponentRosterId = opponentMatchup.roster_id;
+              console.log(`Your roster ID: ${userMatchup.roster_id}, Opponent roster ID: ${opponentRosterId}`);
+            } else {
+              console.log(`Could not find opponent matchup for ${team.leagueName}`);
+            }
+          } else {
+            console.log(`No matchup found for ${team.leagueName} - will show all opposing players`);
+          }
+          
+          console.log(`Final opponent roster ID for ${team.leagueName}:`, opponentRosterId);
+          
+          for (const roster of rosters) {
+            if (roster.owner_id === user.user_id) continue; // Skip user's own roster
+            
+            console.log(`Checking roster: ${roster.roster_id} (owner: ${roster.owner_id})`);
+            
+          // Only include players from teams you're playing against this week
+          if (opponentRosterId && roster.roster_id !== opponentRosterId) {
+            console.log(`Skipping roster ${roster.roster_id} - not opponent (${opponentRosterId})`);
+            continue;
+          }
+          
+          if (opponentRosterId) {
+            console.log(`Including roster ${roster.roster_id} - this is your opponent!`);
+          } else {
+            console.log(`Including roster ${roster.roster_id} - no matchup found, showing all players`);
+          }
+            
+            const rosterUser = users.find(u => u.user_id === roster.owner_id);
+            const rosterPlayers = roster.players || [];
+            
+            for (const playerId of rosterPlayers) {
+              const player = allPlayers[playerId];
+              if (!player) continue;
+              
+              // Check if player is on one of the teams in this game
+              if (player.team === game.awayTeam || player.team === game.homeTeam) {
+                const isStarter = roster.starters?.includes(playerId) || false;
+                
+                // Only include starters
+                if (isStarter) {
+                  const playerData = {
+                    ...player,
+                    leagueName: team.leagueName,
+                    leagueId: team.leagueId,
+                    opponentName: rosterUser?.display_name || 'Unknown',
+                    isStarter: true
+                  };
+                  
+                  opposingPlayers.push(playerData);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing team ${team.leagueName}:`, error);
+        }
+      }
+      
+      console.log(`Found ${myPlayers.length} my players and ${opposingPlayers.length} opposing players in game ${game.awayTeam} @ ${game.homeTeam}`);
+      
+      return {
+        myPlayers: myPlayers.sort((a, b) => {
+          // Sort by team, then by position, then by name
+          if (a.team !== b.team) return a.team.localeCompare(b.team);
+          if (a.position !== b.position) return a.position.localeCompare(b.position);
+          return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        }),
+        opposingPlayers: opposingPlayers.sort((a, b) => {
+          // Sort by team, then by position, then by name
+          if (a.team !== b.team) return a.team.localeCompare(b.team);
+          if (a.position !== b.position) return a.position.localeCompare(b.position);
+          return `${a.first_name} ${b.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        })
+      };
+    } catch (error) {
+      console.error('Error getting players in game:', error);
+      return { myPlayers: [], opposingPlayers: [] };
+    }
+  }
+
+  // Mock NFL games data for testing (based on known Week 2 2025 schedule)
+  getMockNFLGames(week) {
+    if (week !== 2) {
+      return [];
+    }
+
+    return [
+      {
+        id: 'game_1',
+        awayTeam: 'WAS',
+        homeTeam: 'GB',
+        gameTime: '2025-09-11T20:15:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_2',
+        awayTeam: 'CLE',
+        homeTeam: 'BAL',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_3',
+        awayTeam: 'JAX',
+        homeTeam: 'CIN',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_4',
+        awayTeam: 'NYG',
+        homeTeam: 'DAL',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_5',
+        awayTeam: 'CHI',
+        homeTeam: 'DET',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_6',
+        awayTeam: 'NE',
+        homeTeam: 'MIA',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_7',
+        awayTeam: 'SF',
+        homeTeam: 'NO',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_8',
+        awayTeam: 'BUF',
+        homeTeam: 'NYJ',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_9',
+        awayTeam: 'SEA',
+        homeTeam: 'PIT',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_10',
+        awayTeam: 'LAR',
+        homeTeam: 'TEN',
+        gameTime: '2025-09-14T13:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_11',
+        awayTeam: 'CAR',
+        homeTeam: 'ARI',
+        gameTime: '2025-09-14T16:05:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_12',
+        awayTeam: 'DEN',
+        homeTeam: 'IND',
+        gameTime: '2025-09-14T16:05:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_13',
+        awayTeam: 'PHI',
+        homeTeam: 'KC',
+        gameTime: '2025-09-14T16:25:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_14',
+        awayTeam: 'ATL',
+        homeTeam: 'MIN',
+        gameTime: '2025-09-14T20:20:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_15',
+        awayTeam: 'TB',
+        homeTeam: 'HOU',
+        gameTime: '2025-09-15T19:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      },
+      {
+        id: 'game_16',
+        awayTeam: 'LAC',
+        homeTeam: 'LV',
+        gameTime: '2025-09-15T22:00:00-04:00',
+        status: 'upcoming',
+        week: 2,
+        season: 2025
+      }
+    ].sort((a, b) => new Date(a.gameTime) - new Date(b.gameTime));
+  }
+
   // Clear all caches (for testing or emergency reset)
   clearAllCaches() {
     this.playerCache = null;

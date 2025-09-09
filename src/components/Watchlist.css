@@ -35,6 +35,18 @@
   gap: 1.5rem;
 }
 
+.aggregated-info {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: #00d4aa;
+  font-weight: 500;
+}
+
 .league-selector {
   display: flex;
   align-items: center;
@@ -79,25 +91,67 @@
   border: 1px solid rgba(0, 212, 170, 0.3);
 }
 
-/* Matchups Container */
-.matchups-container {
+/* Filter Buttons */
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.filter-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+}
+
+.filter-btn.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+  font-weight: 600;
+}
+
+.filter-btn.active:hover {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+}
+
+/* Games Container */
+.games-container {
   margin-top: 2rem;
 }
 
 .loading-state,
-.no-matchups {
+.no-games {
   text-align: center;
   padding: 3rem;
   color: var(--text-secondary);
 }
 
-.matchups-list {
+.games-list {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.matchup-card {
+.game-card {
   background: var(--bg-secondary);
   border-radius: 12px;
   border: 1px solid var(--border-color);
@@ -105,23 +159,52 @@
   transition: all 0.2s ease;
 }
 
-.matchup-card:hover {
+.game-card:hover {
   border-color: var(--accent-blue);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.matchup-header {
+.game-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-tertiary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.matchup-teams {
+.game-basic-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-matchup {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.away-team,
+.home-team {
+  color: var(--text-primary);
+}
+
+.vs-divider {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.game-time {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.game-spread {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .team-info {
@@ -179,29 +262,79 @@
 /* Players in Game */
 .players-in-game {
   padding: 1.5rem;
+  display: flex;
+  gap: 2rem;
 }
 
-.players-section {
-  margin-bottom: 1.5rem;
+.players-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.players-section:last-child {
-  margin-bottom: 0;
-}
-
-.players-section h4 {
+.players-column h4 {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 1rem;
+  margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color);
+}
+
+.my-players h4 {
+  color: var(--accent-green);
+}
+
+.opposing-players h4 {
+  color: var(--accent-red);
 }
 
 .players-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.player-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.player-item:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-tertiary);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-details {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.starter-badge {
+  background: var(--accent-green);
+  color: #000000;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .no-players {
@@ -251,6 +384,15 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
+}
+
+/* League-specific player colors */
+.fanduel-player {
+  color: #0066cc !important; /* Blue for FanDuel */
+}
+
+.jackson-player {
+  color: #cc0000 !important; /* Red for Jackson */
 }
 
 .player-info {
@@ -342,5 +484,14 @@
 
   .player-avatar {
     align-self: center;
+  }
+
+  .filter-buttons {
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 }

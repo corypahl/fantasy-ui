@@ -215,6 +215,11 @@ class SleeperApiService {
     return this.fetchWithErrorHandling(`${this.baseUrl}/state/nfl`);
   }
 
+  // Get NFL games for a specific week
+  async getNFLGames(season, week) {
+    return this.fetchWithErrorHandling(`${this.baseUrl}/schedule/nfl/${season}/${week}`);
+  }
+
   // Avatar endpoints
   getAvatarUrl(avatarId, thumbnail = false) {
     if (thumbnail) {
