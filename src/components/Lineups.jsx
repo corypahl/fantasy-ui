@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './Lineups.css';
+import fantasyDataService from '../services/fantasyDataService';
 
 const Lineups = ({ 
   selectedTeam, 
@@ -11,14 +12,48 @@ const Lineups = ({
   isLoading 
 }) => {
   const [hasLoadedLineup, setHasLoadedLineup] = useState(false);
+  const [freeAgents, setFreeAgents] = useState({});
+  const [isLoadingFreeAgents, setIsLoadingFreeAgents] = useState(false);
+
+  // Function to load free agents data
+  const loadFreeAgents = useCallback(async () => {
+    if (selectedTeam && userData && !isLoadingFreeAgents && lineupData) {
+      setIsLoadingFreeAgents(true);
+      try {
+        const leagueId = lineupData.roster?.league_id;
+        const platform = selectedTeam.platform;
+
+        if (!leagueId || !platform) {
+          console.warn('Skipping free agents fetch: leagueId or platform is missing.', { leagueId, platform, selectedTeam, lineupData });
+          setFreeAgents({});
+          return;
+        }
+
+        console.log('Fetching free agents for league:', leagueId, 'platform:', platform);
+        const freeAgentsData = await fantasyDataService.getTopFreeAgentsByPosition(
+          leagueId, 
+          platform
+        );
+        setFreeAgents(freeAgentsData);
+        console.log('Free agents loaded:', freeAgentsData);
+      } catch (error) {
+        console.error('Error loading free agents:', error);
+        setFreeAgents({});
+      } finally {
+        setIsLoadingFreeAgents(false);
+      }
+    }
+  }, [selectedTeam, userData, isLoadingFreeAgents, lineupData]);
 
   // Memoized function to load lineup data
   const loadLineupData = useCallback(async () => {
     if (selectedTeam && userData && !hasLoadedLineup) {
       setHasLoadedLineup(true);
       await onLoadLineup();
+      // Load free agents after lineup data is loaded
+      await loadFreeAgents();
     }
-  }, [selectedTeam, userData, hasLoadedLineup, onLoadLineup]);
+  }, [selectedTeam, userData, hasLoadedLineup, onLoadLineup, loadFreeAgents]);
 
   // Auto-load first team when component mounts
   useEffect(() => {
@@ -35,9 +70,10 @@ const Lineups = ({
     }
   }, [selectedTeam, userData, loadLineupData]);
 
-  // Reset hasLoadedLineup when team changes
+  // Reset hasLoadedLineup and free agents when team changes
   useEffect(() => {
     setHasLoadedLineup(false);
+    setFreeAgents({});
   }, [selectedTeam]);
 
   if (!userData) {
@@ -211,6 +247,23 @@ const Lineups = ({
                   return acc;
                 }, {});
 
+                // Add free agents to their respective positions
+                Object.entries(freeAgents).forEach(([position, freeAgentPlayers]) => {
+                  if (freeAgentPlayers && freeAgentPlayers.length > 0) {
+                    if (!playersByPosition[position]) {
+                      playersByPosition[position] = [];
+                    }
+                    // Add free agents with a special flag
+                    freeAgentPlayers.forEach(player => {
+                      playersByPosition[position].push({
+                        ...player,
+                        isStarter: false,
+                        isFreeAgent: true
+                      });
+                    });
+                  }
+                });
+
                 // Define position order for display
                 const positionOrder = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF', 'FLEX', 'UNKNOWN'];
 
@@ -220,11 +273,18 @@ const Lineups = ({
                       const players = playersByPosition[position];
                       if (!players || players.length === 0) return null;
 
-                      // Sort players: starters first, then by points (descending)
+                      // Sort players: starters first, then bench, then free agents, all by points (descending)
                       const sortedPlayers = players.sort((a, b) => {
+                        // First sort by status: starters > bench > free agents
                         if (a.isStarter && !b.isStarter) return -1;
                         if (!a.isStarter && b.isStarter) return 1;
-                        return 0; // Keep original order for same starter status
+                        if (a.isFreeAgent && !b.isFreeAgent) return 1;
+                        if (!a.isFreeAgent && b.isFreeAgent) return -1;
+                        
+                        // Then sort by projected points within each group
+                        const aPoints = a.projections?.projected_points || 0;
+                        const bPoints = b.projections?.projected_points || 0;
+                        return bPoints - aPoints;
                       });
 
                       return (
@@ -232,20 +292,22 @@ const Lineups = ({
                           <div className="position-header">
                             <h3 className="position-title">{position}</h3>
                             <div className="position-count">
-                              {players.filter(p => p.isStarter).length} starting, {players.filter(p => !p.isStarter && !p.isIR).length} bench
+                              {players.filter(p => p.isStarter).length} starting, {players.filter(p => !p.isStarter && !p.isIR && !p.isFreeAgent).length} bench, {players.filter(p => p.isFreeAgent).length} free agents
                             </div>
                           </div>
                           <div className="position-players">
                             {sortedPlayers.map(player => (
                               <div 
                                 key={player.player_id} 
-                                className={`player-card ${player.isStarter ? 'starter' : 'bench'} ${player.isIR ? 'ir' : ''}`}
+                                className={`player-card ${player.isStarter ? 'starter' : 'bench'} ${player.isIR ? 'ir' : ''} ${player.isFreeAgent ? 'free-agent' : ''}`}
                               >
                                 <div className="player-status-indicator">
                                   {player.isStarter ? (
                                     <div className="starter-badge">STARTER</div>
                                   ) : player.isIR ? (
                                     <div className="ir-badge">IR</div>
+                                  ) : player.isFreeAgent ? (
+                                    <div className="free-agent-badge">FREE AGENT</div>
                                   ) : (
                                     <div className="bench-badge">BENCH</div>
                                   )}
@@ -309,6 +371,14 @@ const Lineups = ({
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+
+          {/* Loading indicator for free agents */}
+          {isLoadingFreeAgents && (
+            <div className="free-agents-loading">
+              <p>Loading top free agents...</p>
             </div>
           )}
         </div>

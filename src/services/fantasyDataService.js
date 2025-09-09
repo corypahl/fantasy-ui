@@ -293,6 +293,9 @@ class FantasyDataService {
           });
         });
 
+        console.log(`Found ${rosteredPlayerIds.size} rostered players out of ${Object.keys(players).length} total players`);
+        console.log(`Looking for free agents with position filter: ${position || 'none'}`);
+
         // Filter for free agents
         let freeAgents = Object.values(players).filter(player => {
           // Skip team defenses and other non-player entities
@@ -306,12 +309,28 @@ class FantasyDataService {
           }
 
           // Filter by position if specified
-          if (position && player.fantasy_positions && !player.fantasy_positions.includes(position)) {
-            return false;
+          if (position) {
+            // For defenses, check both position and fantasy_positions
+            if (position === 'DEF') {
+              if (player.position !== 'DEF' && (!player.fantasy_positions || !player.fantasy_positions.includes('DEF'))) {
+                return false;
+              }
+            } else {
+              // For other positions, check fantasy_positions
+              if (!player.fantasy_positions || !player.fantasy_positions.includes(position)) {
+                return false;
+              }
+            }
           }
 
           return true;
         });
+
+        console.log(`After filtering: ${freeAgents.length} free agents found`);
+        if (position && freeAgents.length > 0) {
+          console.log(`Sample free agents for ${position}:`, 
+            freeAgents.slice(0, 3).map(p => `${p.first_name} ${p.last_name} (position: ${p.position}, fantasy_positions: ${p.fantasy_positions?.join(', ') || 'none'})`));
+        }
 
         // Sort by relevance (active players first, then by search rank)
         freeAgents.sort((a, b) => {
@@ -345,6 +364,101 @@ class FantasyDataService {
     } catch (error) {
       console.error('Error fetching free agents:', error);
       throw error;
+    }
+  }
+
+  // Get top free agents by position with projections
+  async getTopFreeAgentsByPosition(leagueId, platform = 'sleeper', season = null) {
+    try {
+      const currentSeason = season || await projectionsService.getCurrentNFLSeason();
+      const currentWeek = await projectionsService.getCurrentNFLWeek();
+      
+      console.log(`Fetching top free agents by position for league ${leagueId}, week ${currentWeek}`);
+      
+      // Get league settings for scoring
+      const leagueSettings = await this.getLeagueSettingsWithCache(leagueId);
+      const scoringSettings = leagueSettings?.scoring_settings;
+      const scoringType = this.getScoringType(scoringSettings);
+      const pointsField = scoringType === 'ppr' ? 'pts_ppr' : 'pts_half_ppr';
+      
+      console.log(`Using scoring type: ${scoringType}, points field: ${pointsField}`);
+      
+      // Test: Get some free agents without position filter first
+      console.log('Testing free agents fetch without position filter...');
+      const testFreeAgents = await this.getFreeAgents(leagueId, null, 10, platform);
+      console.log(`Test found ${testFreeAgents.length} free agents without position filter`);
+      
+      // Get free agents for each position
+      const positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+      const topFreeAgentsByPosition = {};
+      
+      for (const position of positions) {
+        console.log(`Fetching free agents for position: ${position}`);
+        
+        // Get free agents for this position
+        const freeAgents = await this.getFreeAgents(leagueId, position, 50, platform); // Get more to ensure we have enough with projections
+        
+        console.log(`Found ${freeAgents.length} free agents for position ${position}:`, 
+          freeAgents.slice(0, 3).map(p => `${p.first_name} ${p.last_name} (${p.player_id})`));
+        
+        if (freeAgents.length === 0) {
+          console.log(`No free agents found for position: ${position}`);
+          topFreeAgentsByPosition[position] = [];
+          continue;
+        }
+        
+        // Get player IDs for projections and stats
+        const playerIds = freeAgents.map(player => player.player_id);
+        
+        // Get projections and stats for these players (same as roster players)
+        const projections = await projectionsService.getPlayerProjections(playerIds, currentSeason, currentWeek, 'regular', scoringType);
+        const stats = await projectionsService.getHistoricalStats(currentSeason, currentWeek - 1, 'regular');
+        
+        // Use the same enhancement logic as roster players
+        console.log(`Enhancing ${freeAgents.length} free agents for position ${position}...`);
+        let enhancedFreeAgents = [];
+        try {
+          enhancedFreeAgents = await this.enhancePlayerData(freeAgents, projections, stats, scoringSettings, currentWeek, currentSeason);
+          console.log(`Enhanced ${enhancedFreeAgents.length} free agents for position ${position}`);
+        } catch (error) {
+          console.error(`Error enhancing free agents for position ${position}:`, error);
+          // Fallback to simple enhancement if the full enhancement fails
+          enhancedFreeAgents = freeAgents.map(player => ({
+            ...player,
+            projections: {
+              projected_points: 0,
+              stats: {}
+            },
+            stats: {
+              previous_week: { points: 0, stats: {} },
+              season_avg: 0,
+              weekly_stats: {}
+            }
+          }));
+        }
+        
+        // Sort by projected points (descending) and take top 3
+        let topFreeAgents = enhancedFreeAgents
+          .filter(player => player.projections && player.projections.projected_points > 0) // Only include players with projections
+          .sort((a, b) => b.projections.projected_points - a.projections.projected_points)
+          .slice(0, 3);
+
+        // If no players have projections, show top 3 free agents anyway
+        if (topFreeAgents.length === 0 && enhancedFreeAgents.length > 0) {
+          console.log(`No projections found for ${position}, showing top 3 free agents anyway`);
+          topFreeAgents = enhancedFreeAgents.slice(0, 3);
+        }
+        
+        console.log(`Top ${topFreeAgents.length} free agents for ${position}:`, 
+          topFreeAgents.map(p => `${p.first_name} ${p.last_name} (${p.projections.projected_points.toFixed(1)} pts)`));
+        
+        topFreeAgentsByPosition[position] = topFreeAgents;
+      }
+      
+      return topFreeAgentsByPosition;
+    } catch (error) {
+      console.error('Error fetching top free agents by position:', error);
+      return {};
     }
   }
 
@@ -481,10 +595,11 @@ class FantasyDataService {
       const benchIds = (lineup.bench || []).map(p => p.player_id).filter(id => id);
       const irIds = (lineup.ir || []).map(p => p.player_id).filter(id => id);
       
-      // For now, let's focus on starters and a few bench players to reduce API load
+      // Get all players for projections
       const priorityPlayerIds = [
         ...starterIds,
-        ...benchIds.slice(0, 3) // Only get stats for first 3 bench players
+        ...benchIds,
+        ...irIds
       ];
 
       if (priorityPlayerIds.length === 0) {

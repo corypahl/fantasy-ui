@@ -350,6 +350,11 @@
   opacity: 0.8;
 }
 
+.player-card.free-agent {
+  background: #2a2a2a;
+  opacity: 0.9;
+}
+
 /* Player Status Indicators */
 .player-status-indicator {
   display: flex;
@@ -382,6 +387,17 @@
 .ir-badge {
   background: #6b7280;
   color: #ffffff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.free-agent-badge {
+  background: #f59e0b;
+  color: #000000;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.7rem;
@@ -676,5 +692,150 @@
 
   .metric {
     min-width: 60px;
+  }
+}
+
+/* Free Agents Section */
+.free-agents-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #2a2a2a;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+}
+
+.free-agents-title {
+  font-size: 1.25rem;
+  margin: 0 0 1.5rem 0;
+  color: #ffffff;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.free-agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.free-agents-position {
+  background: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid #3a3a3a;
+  overflow: hidden;
+}
+
+.free-agents-position-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #3a3a3a;
+  border-bottom: 1px solid #4a4a4a;
+}
+
+.free-agents-position-title {
+  font-size: 1rem;
+  margin: 0;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.free-agents-count {
+  font-size: 0.8rem;
+  color: #888888;
+}
+
+.free-agents-players {
+  padding: 0.5rem;
+}
+
+.free-agent-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #2a2a2a;
+  border-radius: 4px;
+  border: 1px solid #3a3a3a;
+  transition: all 0.2s ease;
+}
+
+.free-agent-card:hover {
+  background: #333333;
+  border-color: #4a4a4a;
+}
+
+.free-agent-card:last-child {
+  margin-bottom: 0;
+}
+
+.free-agent-info {
+  flex: 1;
+}
+
+.free-agent-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+
+.free-agent-details {
+  font-size: 0.8rem;
+  color: #888888;
+  margin-bottom: 0.25rem;
+}
+
+.free-agent-status {
+  font-size: 0.75rem;
+  color: #666666;
+}
+
+.free-agent-metrics {
+  display: flex;
+  gap: 1rem;
+}
+
+.free-agent-metric {
+  text-align: center;
+  min-width: 60px;
+}
+
+.free-agent-metric-label {
+  font-size: 0.7rem;
+  color: #888888;
+  margin-bottom: 0.25rem;
+}
+
+.free-agent-metric-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.free-agents-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #888888;
+}
+
+/* Responsive adjustments for free agents */
+@media (max-width: 768px) {
+  .free-agents-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .free-agent-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .free-agent-metrics {
+    align-self: flex-end;
   }
 }
