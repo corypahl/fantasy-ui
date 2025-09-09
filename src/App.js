@@ -5,6 +5,11 @@ import fantasyDataService from './services/fantasyDataService';
 import { getStorageValue, setStorageValue, STORAGE_KEYS } from './config/sleeperConfig';
 import appConfig from './config/appConfig';
 import teamsConfig from './config/teamsConfig';
+import Overview from './components/Overview';
+import Live from './components/Live';
+import Watchlist from './components/Watchlist';
+import Lineups from './components/Lineups';
+import Standings from './components/Standings';
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -537,22 +542,28 @@ function App() {
             🏠 Overview
           </button>
           <button 
-            className={`tab-button ${activeTab === 'teams' ? 'active' : ''}`}
-            onClick={() => setActiveTab('teams')}
+            className={`tab-button ${activeTab === 'live' ? 'active' : ''}`}
+            onClick={() => setActiveTab('live')}
           >
-            🏈 Teams
+            📺 Live
           </button>
           <button 
-            className={`tab-button ${activeTab === 'players' ? 'active' : ''}`}
-            onClick={() => setActiveTab('players')}
+            className={`tab-button ${activeTab === 'watchlist' ? 'active' : ''}`}
+            onClick={() => setActiveTab('watchlist')}
           >
-            👥 Players
+            👀 Watchlist
           </button>
           <button 
-            className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
+            className={`tab-button ${activeTab === 'lineups' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lineups')}
           >
-            📊 Analytics
+            🏈 Lineups
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'standings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('standings')}
+          >
+            🏆 Standings
           </button>
         </div>
 
